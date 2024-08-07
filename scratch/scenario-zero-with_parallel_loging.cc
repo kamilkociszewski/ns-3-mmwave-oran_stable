@@ -16,7 +16,6 @@
  * Authors: Andrea Lacava <thecave003@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  */
-
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
@@ -28,9 +27,25 @@
 #include "ns3/epc-helper.h"
 #include "ns3/mmwave-point-to-point-epc-helper.h"
 #include "ns3/lte-helper.h"
+#include <sys/time.h>
+#include <ctime>
+#include <sys/types.h>
+#include <iostream>
+#include <stdlib.h>
+#include <list>
+#include <random>
+#include <chrono>
+#include <cmath>
+#include <fstream>
 
 using namespace ns3;
 using namespace mmwave;
+
+std::map<uint64_t, uint16_t> imsi_cellid;
+std::map<uint16_t, std::set<uint64_t>> imsi_list;
+std::map<uint16_t, Ptr<Node>> cellid_node;
+std::map<uint32_t, uint16_t> ue_cellid_usinghandover;
+std::map<uint64_t, uint32_t> ueimsi_nodeid;
 
 /**
  * Scenario Zero
@@ -87,50 +102,116 @@ PrintGnuplottableUeListToFile (std::string filename)
 }
 
 void
-PrintGnuplottableEnbListToFile (std::string filename)
+PrintGnuplottableEnbListToFile ()
 {
-  std::ofstream outFile;
-  outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::trunc);
-  if (!outFile.is_open ())
+    struct timeval time_now
+            {
+            };
+    gettimeofday (&time_now, nullptr);
+    uint64_t m_startTime = (time_now.tv_sec * 1000) + (time_now.tv_usec / 1000);
+    uint64_t timestamp = m_startTime + (uint64_t) Simulator::Now ().GetMilliSeconds ();
+    //
+    std::string filename1 = "enbs.txt";
+    std::string filename2 = "gnbs.txt";
+    std::ofstream outFile1;
+    outFile1.open (filename1.c_str (), std::ios_base::out | std::ios_base::trunc);
+    std::ofstream outFile2;
+    outFile2.open (filename2.c_str (), std::ios_base::out | std::ios_base::trunc);
+    //
+    for (NodeList::Iterator it = NodeList::Begin (); it != NodeList::End (); ++it)
     {
-      NS_LOG_ERROR ("Can't open file " << filename);
-      return;
-    }
-  for (NodeList::Iterator it = NodeList::Begin (); it != NodeList::End (); ++it)
-    {
-      Ptr<Node> node = *it;
-      int nDevs = node->GetNDevices ();
-      for (int j = 0; j < nDevs; j++)
+        Ptr<Node> node = *it;
+        int nDevs = node->GetNDevices ();
+        for (int j = 0; j < nDevs; j++)
         {
-          Ptr<LteEnbNetDevice> enbdev = node->GetDevice (j)->GetObject<LteEnbNetDevice> ();
-          Ptr<MmWaveEnbNetDevice> mmdev = node->GetDevice (j)->GetObject<MmWaveEnbNetDevice> ();
-          if (enbdev)
+            Ptr<LteEnbNetDevice> enbdev = node->GetDevice (j)->GetObject<LteEnbNetDevice> ();
+            Ptr<MmWaveEnbNetDevice> mmdev = node->GetDevice (j)->GetObject<MmWaveEnbNetDevice> ();
+            if (enbdev)
             {
-              Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
-              outFile << "set label \"" << enbdev->GetCellId () << "\" at " << pos.x << "," << pos.y
-                      << " left font \"Helvetica,8\" textcolor rgb \"blue\" front  point pt 4 ps "
-                         "0.3 lc rgb \"blue\" offset 0,0"
-                      << std::endl;
+                Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
+                if (!outFile1.is_open ())
+                {
+                    NS_LOG_ERROR ("Can't open file " << filename1);
+                    return;
+                }
+                //outFile1 << timestamp << "," << enbdev->GetCellId() << "," << pos.x << "," << pos.y << pos.z << std::endl;
+                outFile1 << timestamp << "," << enbdev->GetCellId () << "," << pos.x << "," << pos.y
+                         << std::endl;
             }
-          else if (mmdev)
+            else if (mmdev)
             {
-              Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
-              outFile << "set label \"" << mmdev->GetCellId () << "\" at " << pos.x << "," << pos.y
-                      << " left font \"Helvetica,8\" textcolor rgb \"red\" front  point pt 4 ps "
-                         "0.3 lc rgb \"red\" offset 0,0"
-                      << std::endl;
+                Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
+                if (!outFile2.is_open ())
+                {
+                    NS_LOG_ERROR ("Can't open file " << filename2);
+                    return;
+                }
+                //outFile2 << timestamp << "," << enbdev->GetCellId() << "," << pos.x << "," << pos.y << pos.z << std::endl;
+                outFile2 << timestamp << "," << mmdev->GetCellId () << "," << pos.x << "," << pos.y
+                         << std::endl;
             }
         }
     }
 }
-
 void
-PrintPosition (Ptr<Node> node)
+ClearFile (std::string Filename)
 {
-  Ptr<MobilityModel> model = node->GetObject<MobilityModel> ();
-  NS_LOG_UNCOND ("Position +****************************** " << model->GetPosition () << " at time "
-                                                             << Simulator::Now ().GetSeconds ());
+    std::string filename = Filename;
+    std::ofstream outFile;
+    outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::trunc);
+    outFile << "timestamp,id,x,y" << std::endl;
+    if (!outFile.is_open ())
+    {
+        NS_LOG_ERROR ("Can't open file " << filename);
+        return;
+    }
+    outFile.close ();
 }
+void
+PrintPosition (Ptr<Node> node, int iterator, std::string Filename)
+{
+    PrintGnuplottableEnbListToFile ();
+    struct timeval time_now
+            {
+            };
+    gettimeofday (&time_now, nullptr);
+    uint64_t m_startTime = (time_now.tv_sec * 1000) + (time_now.tv_usec / 1000);
+    uint64_t timestamp = m_startTime + (uint64_t) Simulator::Now ().GetMilliSeconds ();
+
+    int imsi;
+    Ptr<Node> node1 = NodeList::GetNode (iterator);
+    int nDevs = node->GetNDevices ();
+    std::string filename = Filename;
+    std::ofstream outFile;
+    for (int j = 0; j < nDevs; j++)
+    {
+        Ptr<McUeNetDevice> mcuedev = node1->GetDevice (j)->GetObject<McUeNetDevice> ();
+        if (mcuedev)
+        {
+            imsi = int (mcuedev->GetImsi ());
+            Ptr<MobilityModel> model = node->GetObject<MobilityModel> ();
+            Vector position = model->GetPosition ();
+            NS_LOG_UNCOND ("Position of UE with IMSI " << imsi << " is " << model->GetPosition ()
+                                                       << " at time "
+                                                       << Simulator::Now ().GetSeconds ());
+
+            outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::app);
+            if (!outFile.is_open ())
+            {
+                NS_LOG_ERROR ("Can't open file " << filename);
+                return;
+            }
+            outFile << timestamp << "," << imsi << "," << position.x << "," << position.y
+                    << std::endl;
+            outFile.close ();
+        }
+        else
+        {
+            //
+        }
+    }
+}
+
 
 static ns3::GlobalValue g_bufferSize ("bufferSize", "RLC tx buffer size (MB)",
                                       ns3::UintegerValue (10),
@@ -194,6 +275,16 @@ static ns3::GlobalValue
     g_enableE2FileLogging ("enableE2FileLogging",
                            "If true, generate offline file logging instead of connecting to RIC",
                            ns3::BooleanValue (false), ns3::MakeBooleanChecker ());
+static ns3::GlobalValue
+    g_e2andlog ("E2andLogging",
+                "If true, generate offline file logging instead of connecting to RIC",
+                ns3::BooleanValue (false), ns3::MakeBooleanChecker ());
+static ns3::GlobalValue g_e2_func_id ("KPM_E2functionID", "Function ID to subscribe",
+                                    ns3::DoubleValue (2),
+                                    ns3::MakeDoubleChecker<double> ());
+static ns3::GlobalValue g_rc_e2_func_id ("RC_E2functionID", "Function ID to subscribe",
+                                      ns3::DoubleValue (3),
+                                      ns3::MakeDoubleChecker<double> ());
 
 static ns3::GlobalValue g_controlFileName ("controlFileName",
                                            "The path to the control file (can be absolute)",
@@ -203,19 +294,17 @@ static ns3::GlobalValue g_controlFileName ("controlFileName",
 int
 main (int argc, char *argv[])
 {
-//  LogComponentEnableAll (LOG_PREFIX_ALL);
-    //LogComponentEnable ("RicControlMessage", LOG_LEVEL_ALL);
+  LogComponentEnableAll (LOG_PREFIX_ALL);
+  //  LogComponentEnable ("RicControlMessage", LOG_LEVEL_ALL);
   //  LogComponentEnable ("KpmIndication", LOG_LEVEL_DEBUG);
-//   LogComponentEnable ("DefaultSimulatorImpl", LOG_LEVEL_ALL);
+   LogComponentEnable ("KpmIndication", LOG_LEVEL_INFO);
 
   // LogComponentEnable ("Asn1Types", LOG_LEVEL_LOGIC);
 //   LogComponentEnable ("E2Termination", LOG_LEVEL_LOGIC);
-//   LogComponentEnable ("E2Termination", LOG_LEVEL_DEBUG);
+  //  LogComponentEnable ("E2Termination", LOG_LEVEL_DEBUG);
 
   // LogComponentEnable ("LteEnbNetDevice", LOG_LEVEL_ALL);
-  // LogComponentEnable ("MmWaveEnbNetDevice", LOG_LEVEL_ALL);
-  // LogComponentEnable("MmWaveHelper", LOG_LEVEL_ALL);
-  // LogComponentEnable("MmWaveEnbPhy", LOG_LEVEL_ALL);
+  //LogComponentEnable ("MmWaveEnbNetDevice", LOG_LEVEL_DEBUG);
 
   // The maximum X coordinate of the scenario
 
@@ -249,12 +338,24 @@ main (int argc, char *argv[])
   std::string e2TermIp = stringValue.Get ();
   GlobalValue::GetValueByName ("enableE2FileLogging", booleanValue);
   bool enableE2FileLogging = booleanValue.Get ();
+  GlobalValue::GetValueByName ("E2andLogging", booleanValue);
+  bool g_e2andlog = booleanValue.Get ();
+  GlobalValue::GetValueByName ("KPM_E2functionID", doubleValue);
+  double g_e2_func_id =  doubleValue.Get ();
+  GlobalValue::GetValueByName ("RC_E2functionID", doubleValue);
+  double g_rc_e2_func_id = doubleValue.Get ();
+
+  if (enableE2FileLogging && g_e2andlog)
+    {
+      NS_LOG_ERROR ("Only one of this variables can be set to TRUE - enableE2FileLogging && g_e2andlog");
+    }
+
   GlobalValue::GetValueByName ("numberOfRaPreambles", uintegerValue);
   uint8_t numberOfRaPreambles = uintegerValue.Get ();
 
   NS_LOG_UNCOND ("bufferSize " << bufferSize << " OutageThreshold " << outageThreshold
                                << " HandoverMode " << handoverMode << " e2TermIp " << e2TermIp
-                               << " enableE2FileLogging " << enableE2FileLogging);
+                               << " enableE2FileLogging " << enableE2FileLogging<< " E2andLogging " << g_e2andlog << " E2 Function ID " << g_e2_func_id);
 
   GlobalValue::GetValueByName ("e2lteEnabled", booleanValue);
   bool e2lteEnabled = booleanValue.Get ();
@@ -308,6 +409,19 @@ main (int argc, char *argv[])
                       BooleanValue (enableE2FileLogging));
   Config::SetDefault ("ns3::MmWaveEnbNetDevice::EnableE2FileLogging",
                       BooleanValue (enableE2FileLogging));
+
+  Config::SetDefault ("ns3::MmWaveEnbNetDevice::E2andLogging",
+                      BooleanValue (g_e2andlog));
+  Config::SetDefault ("ns3::LteEnbNetDevice::e2andLogging",
+                      BooleanValue (g_e2andlog));
+
+  Config::SetDefault ("ns3::LteEnbNetDevice::KPM_E2functionID",
+                      DoubleValue (g_e2_func_id));
+  Config::SetDefault ("ns3::MmWaveEnbNetDevice::KPM_E2functionID",
+                      DoubleValue (g_e2_func_id));
+
+  Config::SetDefault ("ns3::LteEnbNetDevice::RC_E2functionID",
+                      DoubleValue (g_rc_e2_func_id));
 
   Config::SetDefault ("ns3::MmWaveEnbMac::NumberOfRaPreambles",
                       UintegerValue (numberOfRaPreambles));
@@ -366,9 +480,9 @@ main (int argc, char *argv[])
   Ptr<MmWavePointToPointEpcHelper> epcHelper = CreateObject<MmWavePointToPointEpcHelper> ();
   mmwaveHelper->SetEpcHelper (epcHelper);
 
-  uint8_t nMmWaveEnbNodes = 0;
-  uint8_t nLteEnbNodes = 6;
-  uint32_t ues = 3;
+  uint8_t nMmWaveEnbNodes = 2;
+  uint8_t nLteEnbNodes = 1;
+  uint32_t ues = 1;
   uint8_t nUeNodes = ues * nMmWaveEnbNodes;
   //uint8_t nUeNodes = 1;
   NS_LOG_INFO (" Bandwidth " << bandwidth << " centerFrequency " << double (centerFrequency)
@@ -513,6 +627,26 @@ main (int argc, char *argv[])
   clientApp.Start (MilliSeconds (100));
   clientApp.Stop (Seconds (simTime - 0.1));
 
+    std::string ue_poss_out = "ue_position.txt";
+    ClearFile (ue_poss_out);
+    ClearFile ("enbs.txt");
+    ClearFile ("gnbs.txt");
+    // Since nodes are randomly allocated during each run we always need to print their positions
+    PrintGnuplottableUeListToFile ("ues.txt");
+
+    int nodecount = int (NodeList::GetNNodes ());
+    // NS_LOG_UNCOND ("number of nodes: " << nodecount);
+    int UE_iterator = nodecount - int (nUeNodes);
+    int numPrints = simTime / 0.1;
+    for (int i = 0; i < numPrints; i++)
+    {
+        for (uint32_t j = 0; j < ueNodes.GetN (); j++)
+        {
+            Simulator::Schedule (Seconds (i * simTime / numPrints), &PrintPosition, ueNodes.Get (j),
+                                 j + UE_iterator, ue_poss_out);
+        }
+    }
+
   // int numPrints = 5;
   // for (int i = 0; i < numPrints; i++)
   //   {
@@ -535,7 +669,7 @@ main (int argc, char *argv[])
 
   // Since nodes are randomly allocated during each run we always need to print their positions
   PrintGnuplottableUeListToFile ("ues.txt");
-  PrintGnuplottableEnbListToFile ("enbs.txt");
+ // PrintGnuplottableEnbListToFile ("enbs.txt");
 
   bool run = true;
   if (run)

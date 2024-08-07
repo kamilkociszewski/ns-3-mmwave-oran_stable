@@ -167,6 +167,8 @@ private:
 
   uint16_t m_basicCellId;
 
+  double e2_func_id; //to pass kpm function id
+  bool m_e2andlog; //if true, both e2 term and e2file logging will work
   bool m_forceE2FileLogging; //< if true log PMs to files
   std::string m_cuUpFileName;
   std::string m_cuCpFileName;

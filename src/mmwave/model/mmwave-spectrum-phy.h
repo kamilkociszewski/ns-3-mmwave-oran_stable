@@ -144,7 +144,8 @@ public:
     IDLE = 0,
     TX = 1,
     RX_DATA = 2,
-    RX_CTRL = 3
+    RX_CTRL = 3,
+    Deep_Sleep = 4
   };
 
   TracedValue<int32_t> m_intState; //!< used to trace the value of m_state
@@ -248,6 +249,7 @@ public:
                       uint8_t rv, bool downlink, uint8_t symStart, uint8_t numSym);
 
   void SetHarqPhyModule (Ptr<MmWaveHarqPhy> harq);
+  void SetSleep_EM (bool val);
 
 
 private:
@@ -304,6 +306,7 @@ private:
 
   Ptr<UniformRandomVariable> m_random;
 
+  bool m_sleepEnabled;
   bool m_dataErrorModelEnabled;       // when true (default) the phy error model is enabled
   bool m_ctrlErrorModelEnabled;       // when true (default) the phy error model is enabled for DL ctrl frame
   TypeId m_errorModelType {Object::GetTypeId()}; //!< Error model type by default is MmWaveLteMiErrorModel
@@ -325,3 +328,4 @@ private:
 
 
 #endif /* SRC_MMWAVE_MODEL_MMWAVE_SPECTRUM_PHY_H_ */
+

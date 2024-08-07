@@ -28,9 +28,29 @@
 #include "ns3/epc-helper.h"
 #include "ns3/mmwave-point-to-point-epc-helper.h"
 #include "ns3/lte-helper.h"
-
+#include <iostream>
+#include <stdlib.h>
+#include <list>
+#include <random>
+#include <chrono>
+#include <cmath>
+#include <fstream>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <map>
+#include <sys/time.h>
+#include <ctime>
+//
 using namespace ns3;
 using namespace mmwave;
+using namespace std;
+
+map<uint16_t, Ptr<Node>> cellid_node;
+map<uint16_t, int> action;
+//map<uint32_t,int> active; // whether ue node is active or not
+map<uint16_t, int> base_station_state;
+//
+std::string ue_poss_out = "ue_position.txt";
 
 /**
  * Scenario Zero
@@ -39,6 +59,20 @@ using namespace mmwave;
 
 NS_LOG_COMPONENT_DEFINE ("ScenarioZero");
 
+void
+MakeBaseStationSleep (Ptr<MmWaveSpectrumPhy> endlphy, Ptr<MmWaveSpectrumPhy> enulphy, bool val,
+                      uint16_t cellid)
+{
+  if (val == 1)
+    cout << "Base Station going to sleep " << cellid << "\n";
+  else
+    cout << "Base Station awakened " << cellid << "\n";
+
+
+  endlphy->SetSleep_EM (val);
+  enulphy->SetSleep_EM (val);
+
+}
 void
 PrintGnuplottableUeListToFile (std::string filename)
 {
@@ -123,13 +157,59 @@ PrintGnuplottableEnbListToFile (std::string filename)
         }
     }
 }
-
 void
-PrintPosition (Ptr<Node> node)
+ClearFile (std::string Filename)
 {
-  Ptr<MobilityModel> model = node->GetObject<MobilityModel> ();
-  NS_LOG_UNCOND ("Position +****************************** " << model->GetPosition () << " at time "
-                                                             << Simulator::Now ().GetSeconds ());
+  std::string filename = Filename;
+  std::ofstream outFile;
+  outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::trunc);
+  outFile << "timestamp,imsi,x,y" << std::endl;
+  if (!outFile.is_open ())
+    {
+      NS_LOG_ERROR ("Can't open file " << filename);
+      return;
+    }
+  outFile.close ();
+}
+void
+PrintPosition (Ptr<Node> node, int iterator, std::string Filename)
+{
+  struct timeval time_now{};
+  gettimeofday (&time_now, nullptr);
+  uint64_t m_startTime = (time_now.tv_sec * 1000) + (time_now.tv_usec / 1000);
+  uint64_t timestamp = m_startTime + (uint64_t) Simulator::Now().GetMilliSeconds ();
+
+  int imsi;
+  Ptr<Node> node1 = NodeList::GetNode (iterator);
+  int nDevs = node->GetNDevices ();
+   std::string filename = Filename;
+   std::ofstream outFile;
+  for (int j = 0; j < nDevs; j++)
+    {
+      Ptr<McUeNetDevice> mcuedev = node1->GetDevice (j)->GetObject<McUeNetDevice> ();
+      if (mcuedev)
+        {
+          imsi = int (mcuedev->GetImsi ());
+          Ptr<MobilityModel> model = node->GetObject<MobilityModel> ();
+          Vector position = model->GetPosition ();
+          NS_LOG_UNCOND ("Position of UE with IMSI " << imsi << " is " << model->GetPosition ()
+                                                     << " at time "
+                                                     << Simulator::Now ().GetSeconds ());
+
+            outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::app);
+          if (!outFile.is_open ())
+            {
+              NS_LOG_ERROR ("Can't open file " << filename);
+              return;
+            }
+          outFile << timestamp <<","<<imsi << "," << position.x << "," << position.y << std::endl;
+          outFile.close ();
+        }
+      else
+        {
+          //
+        }
+    }
 }
 
 static ns3::GlobalValue g_bufferSize ("bufferSize", "RLC tx buffer size (MB)",
@@ -154,8 +234,9 @@ static ns3::GlobalValue g_e2cuUp ("e2cuUp", "If true, send CU-UP reports", ns3::
 static ns3::GlobalValue g_e2cuCp ("e2cuCp", "If true, send CU-CP reports", ns3::BooleanValue (true),
                                   ns3::MakeBooleanChecker ());
 
-static ns3::GlobalValue g_reducedPmValues ("reducedPmValues", "If true, use a subset of the the pm containers",
-                                        ns3::BooleanValue (true), ns3::MakeBooleanChecker ());
+static ns3::GlobalValue g_reducedPmValues ("reducedPmValues",
+                                           "If true, use a subset of the the pm containers",
+                                           ns3::BooleanValue (true), ns3::MakeBooleanChecker ());
 
 static ns3::GlobalValue
     g_hoSinrDifference ("hoSinrDifference",
@@ -167,13 +248,13 @@ static ns3::GlobalValue
                              "E2 Indication Periodicity reports (value in seconds)",
                              ns3::DoubleValue (0.1), ns3::MakeDoubleChecker<double> (0.01, 2.0));
 
-static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (1000),
-                                   ns3::MakeDoubleChecker<double> (0.1, 1000.0));
+static ns3::GlobalValue g_simTime ("simTime", "Simulation time in seconds", ns3::DoubleValue (2),
+                                   ns3::MakeDoubleChecker<double> (0.1, 100000.0));
 
-static ns3::GlobalValue g_outageThreshold ("outageThreshold",
-                                           "SNR threshold for outage events [dB]", // use -1000.0 with NoAuto
-                                           ns3::DoubleValue (-5.0),
-                                           ns3::MakeDoubleChecker<double> ());
+static ns3::GlobalValue
+    g_outageThreshold ("outageThreshold",
+                       "SNR threshold for outage events [dB]", // use -1000.0 with NoAuto
+                       ns3::DoubleValue (-5.0), ns3::MakeDoubleChecker<double> ());
 
 static ns3::GlobalValue g_numberOfRaPreambles (
     "numberOfRaPreambles",
@@ -188,7 +269,7 @@ static ns3::GlobalValue
                     ns3::StringValue ("DynamicTtt"), ns3::MakeStringChecker ());
 
 static ns3::GlobalValue g_e2TermIp ("e2TermIp", "The IP address of the RIC E2 termination",
-                                    ns3::StringValue ("127.0.0.1"), ns3::MakeStringChecker ());
+                                    ns3::StringValue ("10.0.2.10"), ns3::MakeStringChecker ());
 
 static ns3::GlobalValue
     g_enableE2FileLogging ("enableE2FileLogging",
@@ -197,29 +278,21 @@ static ns3::GlobalValue
 
 static ns3::GlobalValue g_controlFileName ("controlFileName",
                                            "The path to the control file (can be absolute)",
-                                           ns3::StringValue (""),
-                                           ns3::MakeStringChecker ());
+                                           ns3::StringValue (""), ns3::MakeStringChecker ());
 
 int
 main (int argc, char *argv[])
 {
-//  LogComponentEnableAll (LOG_PREFIX_ALL);
-    //LogComponentEnable ("RicControlMessage", LOG_LEVEL_ALL);
-  //  LogComponentEnable ("KpmIndication", LOG_LEVEL_DEBUG);
-//   LogComponentEnable ("DefaultSimulatorImpl", LOG_LEVEL_ALL);
-
+  LogComponentEnableAll (LOG_PREFIX_ALL);
+  // LogComponentEnable ("RicControlMessage", LOG_LEVEL_ALL);
   // LogComponentEnable ("Asn1Types", LOG_LEVEL_LOGIC);
-//   LogComponentEnable ("E2Termination", LOG_LEVEL_LOGIC);
-//   LogComponentEnable ("E2Termination", LOG_LEVEL_DEBUG);
+  // LogComponentEnable ("E2Termination", LOG_LEVEL_LOGIC);
 
   // LogComponentEnable ("LteEnbNetDevice", LOG_LEVEL_ALL);
-  // LogComponentEnable ("MmWaveEnbNetDevice", LOG_LEVEL_ALL);
-  // LogComponentEnable("MmWaveHelper", LOG_LEVEL_ALL);
-  // LogComponentEnable("MmWaveEnbPhy", LOG_LEVEL_ALL);
+  // LogComponentEnable ("MmWaveSpectrumPhy", LOG_LEVEL_ALL);
+  // LogComponentEnable ("MmWaveEnbNetDevice", LOG_LEVEL_DEBUG);
 
   // The maximum X coordinate of the scenario
-
-
   double maxXAxis = 4000;
   // The maximum Y coordinate of the scenario
   double maxYAxis = 4000;
@@ -343,7 +416,7 @@ main (int argc, char *argv[])
   // Center frequency in Hz
   double centerFrequency = 3.5e9;
   // Distance between the mmWave BSs and the two co-located LTE and mmWave BSs in meters
-  double isd = 1000; // (interside distance)
+  double isd = 500; // (interside distance)
   // Number of antennas in each UE
   int numAntennasMcUe = 1;
   // Number of antennas in each mmWave BS
@@ -366,11 +439,12 @@ main (int argc, char *argv[])
   Ptr<MmWavePointToPointEpcHelper> epcHelper = CreateObject<MmWavePointToPointEpcHelper> ();
   mmwaveHelper->SetEpcHelper (epcHelper);
 
-  uint8_t nMmWaveEnbNodes = 0;
-  uint8_t nLteEnbNodes = 6;
-  uint32_t ues = 3;
-  uint8_t nUeNodes = ues * nMmWaveEnbNodes;
-  //uint8_t nUeNodes = 1;
+  uint8_t nMmWaveEnbNodes = 2;
+  uint8_t nLteEnbNodes = 1;
+  uint32_t ues = 2;
+  uint8_t nUeNodes = ues;
+  //uint8_t nUeNodes = ues * nMmWaveEnbNodes;
+
   NS_LOG_INFO (" Bandwidth " << bandwidth << " centerFrequency " << double (centerFrequency)
                              << " isd " << isd << " numAntennasMcUe " << numAntennasMcUe
                              << " numAntennasMmWave " << numAntennasMmWave << " nMmWaveEnbNodes "
@@ -419,18 +493,19 @@ main (int argc, char *argv[])
 
   // We want a center with one LTE enb and one mmWave co-located in the same place
   enbPositionAlloc->Add (centerPosition);
-  enbPositionAlloc->Add (centerPosition);
+  enbPositionAlloc->Add (Vector (centerPosition.x-500, centerPosition.y-500, 3));
+  enbPositionAlloc->Add (Vector (centerPosition.x+500, centerPosition.y+500, 3));
 
-  double x, y;
-  double nConstellation = nMmWaveEnbNodes - 1;
+  //double x, y;
+  //double nConstellation = nMmWaveEnbNodes - 1;
 
   // This guarantee that each of the rest BSs is placed at the same distance from the two co-located in the center
-  for (int8_t i = 0; i < nConstellation; ++i)
+  /*  for (int8_t i = 0; i < nConstellation; ++i)
     {
       x = isd * cos ((2 * M_PI * i) / (nConstellation));
       y = isd * sin ((2 * M_PI * i) / (nConstellation));
       enbPositionAlloc->Add (Vector (centerPosition.x + x, centerPosition.y + y, 3));
-    }
+    }*/
 
   MobilityHelper enbmobility;
   enbmobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -478,6 +553,37 @@ main (int argc, char *argv[])
 
   // Manual attachment
   mmwaveHelper->AttachToClosestEnb (mcUeDevs, mmWaveEnbDevs, lteEnbDevs);
+  GlobalValue::GetValueByName ("simTime", doubleValue);
+  double simTime = doubleValue.Get ();
+  //sleep test
+  for (uint32_t i = 0; i < mmWaveEnbNodes.GetN (); i++)
+    {
+      Ptr<MmWaveEnbNetDevice> mmdev =
+          DynamicCast<MmWaveEnbNetDevice> (mmWaveEnbNodes.Get (i)->GetDevice (0));
+      Ptr<Node> nn = mmWaveEnbNodes.Get (i);
+      cellid_node[mmdev->GetCellId ()] = nn;
+      //default awake base station
+      base_station_state[mmdev->GetCellId ()] = 0;
+      action[mmdev->GetCellId ()] = 2;
+    }
+  // make base station to go to sleep
+
+  // Turning off all mmwave cells
+  for (uint32_t i = 0; i < mmWaveEnbNodes.GetN (); i++)
+    {
+      Ptr<MmWaveEnbPhy> enbPhy =
+          mmWaveEnbNodes.Get (i)->GetDevice (0)->GetObject<MmWaveEnbNetDevice> ()->GetPhy ();
+      Ptr<MmWaveEnbNetDevice> mmdev =
+          DynamicCast<MmWaveEnbNetDevice> (mmWaveEnbNodes.Get (i)->GetDevice (0));
+      uint16_t cell_id = mmdev->GetCellId ();
+      Ptr<MmWaveSpectrumPhy> enbdl = enbPhy->GetDlSpectrumPhy ();
+      Ptr<MmWaveSpectrumPhy> enbul = enbPhy->GetUlSpectrumPhy ();
+      for (int t= 1; t*10 <simTime; t++){
+          int tim = t * 10;
+          Simulator::Schedule (Seconds (tim), &MakeBaseStationSleep, enbdl, enbul, true, cell_id);
+          Simulator::Schedule (Seconds (tim+5), &MakeBaseStationSleep, enbdl, enbul, false, cell_id);
+        }
+    }
 
   // Install and start applications
   // On the remoteHost there is UDP OnOff Application
@@ -506,21 +612,26 @@ main (int argc, char *argv[])
     }
 
   // Start applications
-  GlobalValue::GetValueByName ("simTime", doubleValue);
-  double simTime = doubleValue.Get ();
+
   sinkApp.Start (Seconds (0));
 
   clientApp.Start (MilliSeconds (100));
   clientApp.Stop (Seconds (simTime - 0.1));
 
-  // int numPrints = 5;
-  // for (int i = 0; i < numPrints; i++)
-  //   {
-  //     for (uint32_t j = 0; j < ueNodes.GetN (); j++)
-  //       {
-  //         Simulator::Schedule (Seconds (i * simTime / numPrints), &PrintPosition, ueNodes.Get (j));
-  //       }
-  //   }
+  int nodecount = int (NodeList::GetNNodes ());
+  // NS_LOG_UNCOND ("number of nodes: " << nodecount);
+  int UE_iterator = nodecount - int (nUeNodes);
+  ClearFile (ue_poss_out);
+
+  int numPrints = simTime / 0.1;
+  for (int i = 0; i < numPrints; i++)
+    {
+      for (uint32_t j = 0; j < ueNodes.GetN (); j++)
+        {
+          Simulator::Schedule (Seconds (i * simTime / numPrints), &PrintPosition, ueNodes.Get (j),
+                               j + UE_iterator, ue_poss_out);
+        }
+    }
 
   if (enableTraces)
     {
