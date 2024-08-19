@@ -32,6 +32,8 @@
 *								 Integration of Carrier Aggregation
 * Modified by: Argha Sen <arghasen10@gmail.com>
 *                 MmWave Radio Energy Model
+* Modified by: Kamil Kociszewski <kamil.kociszewski@orange.com>
+               Deep sleep mode for mmwave-spectrum-phy.cc
 */
 
 
