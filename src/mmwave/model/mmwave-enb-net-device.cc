@@ -3,6 +3,7 @@
 *   Copyright (c) 2011 Centre Tecnologic de Telecomunicacions de Catalunya (CTTC)
 *   Copyright (c) 2015, NYU WIRELESS, Tandon School of Engineering, New York University
 *   Copyright (c) 2016, 2018, University of Padova, Dep. of Information Engineering, SIGNET lab.
+*   Copyright (c) 2024 Orange Innovation Poland
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License version 2 as
@@ -27,6 +28,8 @@
 *
 *       Modified by: Tommaso Zugno <tommasozugno@gmail.com>
 *                                Integration of Carrier Aggregation
+*       Modified by: Kamil Kociszewski <kamil.kociszewski@orange.com>
+*                             Return number of associated UEs, parallel reporting for E2
 */
 
 
@@ -303,6 +306,10 @@ MmWaveEnbNetDevice::GetCellId () const
   NS_LOG_FUNCTION (this);
   return m_cellId;
 }
+
+std::map<uint16_t, Ptr<UeManager>> MmWaveEnbNetDevice::GetUeMap() {
+            return m_rrc->GetUeMap();}
+
 
 bool
 MmWaveEnbNetDevice::HasCellId (uint16_t cellId) const

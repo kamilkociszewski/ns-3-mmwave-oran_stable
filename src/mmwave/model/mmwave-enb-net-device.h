@@ -84,6 +84,8 @@ public:
 
   uint16_t GetCellId () const;
 
+  std::map<uint16_t, Ptr<UeManager>> GetUeMap();
+
   bool HasCellId (uint16_t cellId) const;
 
   uint8_t GetBandwidth () const;

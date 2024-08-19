@@ -1,5 +1,6 @@
 /* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
 /* *
+ * Copyright (c) 2024 Orange Innovation Poland
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation;
@@ -50,6 +51,9 @@ std::map<uint16_t, std::set<uint64_t>> imsi_list;
 std::map<uint16_t, Ptr<Node>> cellid_node;
 std::map<uint32_t, uint16_t> ue_cellid_usinghandover;
 std::map<uint64_t, uint32_t> ueimsi_nodeid;
+int ue_assoc_list[10] = {0};
+double maxXAxis;
+double maxYAxis;
 
 /**
  * Scenario Zero
@@ -61,115 +65,125 @@ NS_LOG_COMPONENT_DEFINE ("ScenarioZero");
 void
 PrintGnuplottableUeListToFile (std::string filename)
 {
-  std::ofstream outFile;
-  outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::trunc);
-  if (!outFile.is_open ())
+    std::ofstream outFile;
+    outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::trunc);
+    if (!outFile.is_open ())
     {
-      NS_LOG_ERROR ("Can't open file " << filename);
-      return;
+        NS_LOG_ERROR ("Can't open file " << filename);
+        return;
     }
-  for (NodeList::Iterator it = NodeList::Begin (); it != NodeList::End (); ++it)
-    {
-      Ptr<Node> node = *it;
-      int nDevs = node->GetNDevices ();
-      for (int j = 0; j < nDevs; j++)
-        {
-          Ptr<LteUeNetDevice> uedev = node->GetDevice (j)->GetObject<LteUeNetDevice> ();
-          Ptr<MmWaveUeNetDevice> mmuedev = node->GetDevice (j)->GetObject<MmWaveUeNetDevice> ();
-          Ptr<McUeNetDevice> mcuedev = node->GetDevice (j)->GetObject<McUeNetDevice> ();
-          if (uedev)
-            {
-              Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
-              outFile << "set label \"" << uedev->GetImsi () << "\" at " << pos.x << "," << pos.y
-                      << " left font \"Helvetica,8\" textcolor rgb \"black\" front point pt 1 ps "
-                         "0.3 lc rgb \"black\" offset 0,0"
-                      << std::endl;
-            }
-          else if (mmuedev)
-            {
-              Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
-              outFile << "set label \"" << mmuedev->GetImsi () << "\" at " << pos.x << "," << pos.y
-                      << " left font \"Helvetica,8\" textcolor rgb \"black\" front point pt 1 ps "
-                         "0.3 lc rgb \"black\" offset 0,0"
-                      << std::endl;
-            }
-          else if (mcuedev)
-            {
-              Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
-              outFile << "set label \"" << mcuedev->GetImsi () << "\" at " << pos.x << "," << pos.y
-                      << " left font \"Helvetica,8\" textcolor rgb \"black\" front point pt 1 ps "
-                         "0.3 lc rgb \"black\" offset 0,0"
-                      << std::endl;
-            }
-        }
-    }
-}
-
-void
-PrintGnuplottableEnbListToFile ()
-{
-    struct timeval time_now
-            {
-            };
-    gettimeofday (&time_now, nullptr);
-    uint64_t m_startTime = (time_now.tv_sec * 1000) + (time_now.tv_usec / 1000);
-    uint64_t timestamp = m_startTime + (uint64_t) Simulator::Now ().GetMilliSeconds ();
-    //
-    std::string filename1 = "enbs.txt";
-    std::string filename2 = "gnbs.txt";
-    std::ofstream outFile1;
-    outFile1.open (filename1.c_str (), std::ios_base::out | std::ios_base::trunc);
-    std::ofstream outFile2;
-    outFile2.open (filename2.c_str (), std::ios_base::out | std::ios_base::trunc);
-    //
     for (NodeList::Iterator it = NodeList::Begin (); it != NodeList::End (); ++it)
     {
         Ptr<Node> node = *it;
         int nDevs = node->GetNDevices ();
         for (int j = 0; j < nDevs; j++)
         {
-            Ptr<LteEnbNetDevice> enbdev = node->GetDevice (j)->GetObject<LteEnbNetDevice> ();
-            Ptr<MmWaveEnbNetDevice> mmdev = node->GetDevice (j)->GetObject<MmWaveEnbNetDevice> ();
-            if (enbdev)
+            Ptr<LteUeNetDevice> uedev = node->GetDevice (j)->GetObject<LteUeNetDevice> ();
+            Ptr<MmWaveUeNetDevice> mmuedev = node->GetDevice (j)->GetObject<MmWaveUeNetDevice> ();
+            Ptr<McUeNetDevice> mcuedev = node->GetDevice (j)->GetObject<McUeNetDevice> ();
+            if (uedev)
             {
                 Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
-                if (!outFile1.is_open ())
-                {
-                    NS_LOG_ERROR ("Can't open file " << filename1);
-                    return;
-                }
-                //outFile1 << timestamp << "," << enbdev->GetCellId() << "," << pos.x << "," << pos.y << pos.z << std::endl;
-                outFile1 << timestamp << "," << enbdev->GetCellId () << "," << pos.x << "," << pos.y
-                         << std::endl;
+                outFile << "set label \"" << uedev->GetImsi () << "\" at " << pos.x << "," << pos.y
+                        << " left font \"Helvetica,8\" textcolor rgb \"black\" front point pt 1 ps "
+                           "0.3 lc rgb \"black\" offset 0,0"
+                        << std::endl;
             }
-            else if (mmdev)
+            else if (mmuedev)
             {
                 Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
-                if (!outFile2.is_open ())
-                {
-                    NS_LOG_ERROR ("Can't open file " << filename2);
-                    return;
-                }
-                //outFile2 << timestamp << "," << enbdev->GetCellId() << "," << pos.x << "," << pos.y << pos.z << std::endl;
-                outFile2 << timestamp << "," << mmdev->GetCellId () << "," << pos.x << "," << pos.y
-                         << std::endl;
+                outFile << "set label \"" << mmuedev->GetImsi () << "\" at " << pos.x << "," << pos.y
+                        << " left font \"Helvetica,8\" textcolor rgb \"black\" front point pt 1 ps "
+                           "0.3 lc rgb \"black\" offset 0,0"
+                        << std::endl;
+            }
+            else if (mcuedev)
+            {
+                Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
+                outFile << "set label \"" << mcuedev->GetImsi () << "\" at " << pos.x << "," << pos.y
+                        << " left font \"Helvetica,8\" textcolor rgb \"black\" front point pt 1 ps "
+                           "0.3 lc rgb \"black\" offset 0,0"
+                        << std::endl;
             }
         }
     }
 }
+
 void
-ClearFile (std::string Filename)
-{
+PrintGnuplottableEnbListToFile() {
+    struct timeval time_now{};
+    gettimeofday(&time_now, nullptr);
+    uint64_t m_startTime = (time_now.tv_sec * 1000) + (time_now.tv_usec / 1000);
+    uint64_t timestamp = m_startTime + (uint64_t) Simulator::Now().GetMilliSeconds();
+    //
+    std::string filename1 = "enbs.txt";
+    std::string filename2 = "gnbs.txt";
+    //
+
+    for (NodeList::Iterator it = NodeList::Begin(); it != NodeList::End(); ++it) {
+        Ptr<Node> node = *it;
+        int nDevs = node->GetNDevices();
+        for (int j = 0; j < nDevs; j++) {
+            Ptr<LteEnbNetDevice> enbdev = node->GetDevice(j)->GetObject<LteEnbNetDevice>();
+            Ptr<MmWaveEnbNetDevice> mmdev = node->GetDevice(j)->GetObject<MmWaveEnbNetDevice>();
+            if (enbdev) {
+                Vector pos = node->GetObject<MobilityModel>()->GetPosition();
+                std::ofstream outFile1;
+                outFile1.open(filename1.c_str(), std::ios_base::out | std::ios_base::app);
+                if (!outFile1.is_open()) {
+                    NS_LOG_ERROR ("Can't open file " << filename1);
+                    return;
+                }
+                //outFile1 << timestamp << "," << enbdev->GetCellId() << "," << pos.x << "," << pos.y << pos.z << std::endl;
+                outFile1 << timestamp << "," << enbdev->GetCellId() << "," << pos.x << "," << pos.y << std::endl;
+                outFile1.close();
+            } else if (mmdev) {
+                Vector pos = node->GetObject<MobilityModel>()->GetPosition();
+                std::ofstream outFile2;
+                outFile2.open(filename2.c_str(), std::ios_base::out | std::ios_base::app);
+                if (!outFile2.is_open()) {
+                    NS_LOG_ERROR ("Can't open file " << filename2);
+                    return;
+                }
+                auto ueMap = mmdev->GetUeMap();
+                for (const auto& ue : ueMap) {
+                    uint64_t imsi_assoc = ue.second->GetImsi();
+                    //NS_LOG_UNCOND ("IMSI: " << imsi_assoc << " associated with cell: "  << mmdev->GetCellId ());
+                    ue_assoc_list[imsi_assoc-1] = mmdev->GetCellId ();
+                }
+
+                //outFile2 << timestamp << "," << enbdev->GetCellId() << "," << pos.x << "," << pos.y << pos.z << std::endl;
+                outFile2 << timestamp << "," << mmdev->GetCellId ()  << "," << pos.x << "," << pos.y << std::endl;
+                outFile2.close();
+            }
+        }
+    }
+}
+
+void
+ClearFile(std::string Filename) {
     std::string filename = Filename;
     std::ofstream outFile;
-    outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::trunc);
-    outFile << "timestamp,id,x,y" << std::endl;
-    if (!outFile.is_open ())
-    {
+    outFile.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc);
+    if (!outFile.is_open()) {
         NS_LOG_ERROR ("Can't open file " << filename);
         return;
     }
-    outFile.close ();
+    outFile.close();
+    struct timeval time_now{};
+    gettimeofday(&time_now, nullptr);
+    uint64_t m_startTime = (time_now.tv_sec * 1000) + (time_now.tv_usec / 1000);
+    uint64_t timestamp = m_startTime + (uint64_t) Simulator::Now().GetMilliSeconds();
+    std::ofstream outFile1;
+    outFile1.open(filename .c_str(), std::ios_base::out | std::ios_base::app);
+
+    if (Filename == "ue_position.txt") {
+        outFile1 << "timestamp,id,x,y,type,cell" << std::endl;
+    } else {
+        outFile1 << "timestamp,id,x,y" << std::endl;
+        outFile1 << timestamp << "," << "0" << "," << maxXAxis << "," << maxYAxis << std::endl;
+    }
+    outFile1.close();
 }
 void
 PrintPosition (Ptr<Node> node, int iterator, std::string Filename)
@@ -190,9 +204,15 @@ PrintPosition (Ptr<Node> node, int iterator, std::string Filename)
     for (int j = 0; j < nDevs; j++)
     {
         Ptr<McUeNetDevice> mcuedev = node1->GetDevice (j)->GetObject<McUeNetDevice> ();
+        Ptr<LteUeNetDevice> uedev = node->GetDevice (j)->GetObject <LteUeNetDevice> ();
+        Ptr<MmWaveUeNetDevice> mmuedev = node->GetDevice (j)->GetObject <MmWaveUeNetDevice> ();
         if (mcuedev)
         {
             imsi = int (mcuedev->GetImsi ());
+            if (ue_assoc_list[imsi-1] == 0) {
+                //NS_LOG_UNCOND ("Position of UE not stored, UE not associated to any cell!");
+                return;
+            }
             Ptr<MobilityModel> model = node->GetObject<MobilityModel> ();
             Vector position = model->GetPosition ();
             NS_LOG_UNCOND ("Position of UE with IMSI " << imsi << " is " << model->GetPosition ()
@@ -205,17 +225,60 @@ PrintPosition (Ptr<Node> node, int iterator, std::string Filename)
                 NS_LOG_ERROR ("Can't open file " << filename);
                 return;
             }
-            outFile << timestamp << "," << imsi << "," << position.x << "," << position.y
-                    << std::endl;
+            outFile << timestamp << "," << imsi << "," << position.x << "," << position.y<< ",mc," <<
+                    ue_assoc_list[imsi-1] << std::endl;
             outFile.close ();
         }
-        else
+        else if (mmuedev)
         {
+            imsi = int (mcuedev->GetImsi ());
+            if (ue_assoc_list[imsi-1] == 0) {
+               // NS_LOG_UNCOND ("Position of UE not stored, UE not associated to any cell!");
+                return;
+            }
+            Ptr<MobilityModel> model = node->GetObject<MobilityModel> ();
+            Vector position = model->GetPosition ();
+            NS_LOG_UNCOND ("Position of UE with IMSI " << imsi << " is " << model->GetPosition ()
+                                                       << " at time "
+                                                       << Simulator::Now ().GetSeconds ());
+
+            outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::app);
+            if (!outFile.is_open ())
+            {
+                NS_LOG_ERROR ("Can't open file " << filename);
+                return;
+            }
+            outFile << timestamp << "," << imsi << "," << position.x << "," << position.y<< ",mm," <<
+                    ue_assoc_list[imsi-1] << std::endl;
+            outFile.close ();
+        }
+        else if (uedev)
+        {
+            imsi = int (mcuedev->GetImsi ());
+            if (ue_assoc_list[imsi-1] == 0) {
+               // NS_LOG_UNCOND ("Position of UE not stored, UE not associated to any cell!");
+                return;
+            }
+            Ptr<MobilityModel> model = node->GetObject<MobilityModel> ();
+            Vector position = model->GetPosition ();
+            NS_LOG_UNCOND ("Position of UE with IMSI " << imsi << " is " << model->GetPosition ()
+                                                       << " at time "
+                                                       << Simulator::Now ().GetSeconds ());
+
+            outFile.open (filename.c_str (), std::ios_base::out | std::ios_base::app);
+            if (!outFile.is_open ())
+            {
+                NS_LOG_ERROR ("Can't open file " << filename);
+                return;
+            }
+            outFile << timestamp << "," << imsi << "," << position.x << "," << position.y<< ",lte," <<
+                    ue_assoc_list[imsi-1] << std::endl;
+            outFile.close ();
+        } else {
             //
         }
     }
 }
-
 
 static ns3::GlobalValue g_bufferSize ("bufferSize", "RLC tx buffer size (MB)",
                                       ns3::UintegerValue (10),
@@ -313,9 +376,9 @@ main (int argc, char *argv[])
   // The maximum X coordinate of the scenario
 
 
-  double maxXAxis = 4000;
+  maxXAxis = 4000;
   // The maximum Y coordinate of the scenario
-  double maxYAxis = 4000;
+  maxYAxis = 4000;
 
   // Command line arguments
   CommandLine cmd;
