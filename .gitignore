@@ -41,6 +41,8 @@ build/
 /.cproject
 /.project
 .vscode/*
+.idea
+__pycache__
 
 docs/
 local_build.sh
