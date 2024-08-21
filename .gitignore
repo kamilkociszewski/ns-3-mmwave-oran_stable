@@ -41,8 +41,6 @@ build/
 /.cproject
 /.project
 .vscode/*
-.idea
-__pycache__
 
 docs/
 local_build.sh
@@ -80,6 +78,3 @@ X2Stats.txt
 LteDlRsrpSinrStats.txt
 RlcAmBufferSize.txt
 LteUlSinrStats.txt
-.idea
-.waf3*
-__pycache__
