@@ -349,6 +349,39 @@ static ns3::GlobalValue g_controlFileName("controlFileName",
                                           ns3::StringValue(""),
                                           ns3::MakeStringChecker());
 
+// TODO: running flags
+static ns3::GlobalValue mmWave_nodes ("N_MmWaveEnbNodes", "Number of mmWaveNodes",
+                                      ns3::UintegerValue (2),
+                                      ns3::MakeUintegerChecker<uint8_t> ());
+
+static ns3::GlobalValue lteEnb_nodes ("N_LteEnbNodes", "Number of LteEnbNodes",
+                                      ns3::UintegerValue (1),
+                                      ns3::MakeUintegerChecker<uint8_t> ());
+
+static ns3::GlobalValue ue_s ("N_Ues", "Number of User Equipments",
+                                      ns3::UintegerValue (1),
+                                      ns3::MakeUintegerChecker<uint32_t> ());
+
+static ns3::GlobalValue center_freq ("CenterFrequency", "Center Frequency Value",
+                                      ns3::DoubleValue (3.5e9),
+                                      ns3::MakeDoubleChecker<double> ());
+
+static ns3::GlobalValue bandwidth_value ("Bandwidth", "Bandwidth Value",
+                                      ns3::DoubleValue (20e6),
+                                      ns3::MakeDoubleChecker<double> ());
+
+static ns3::GlobalValue num_antennas_McUe ("N_AntennasMcUe", "Number of Antenna as McUe",
+                                      ns3::IntegerValue (1),
+                                      ns3::MakeIntegerChecker<int> ());
+
+static ns3::GlobalValue num_antennas_MmWave ("N_AntennasMmWave", "Number of Antenna as MmWave",
+                                      ns3::IntegerValue (1),
+                                      ns3::MakeIntegerChecker<int> ());
+
+static ns3::GlobalValue interside_distance_value ("IntersideDistance", "Interside Distance Value",
+                                      ns3::DoubleValue (1000),
+                                      ns3::MakeDoubleChecker<double> ());
+
 int
 main(int argc, char *argv[]) {
     LogComponentEnableAll(LOG_PREFIX_ALL);
@@ -510,15 +543,20 @@ main(int argc, char *argv[]) {
     Config::SetDefault("ns3::LteEnbRrc::HoSinrDifference", DoubleValue(hoSinrDifference));
 
     // Carrier bandwidth in Hz
-    double bandwidth = 20e6;
+    GlobalValue::GetValueByName ("Bandwidth", doubleValue);
+    double bandwidth = doubleValue.Get();
     // Center frequency in Hz
-    double centerFrequency = 3.5e9;
+    GlobalValue::GetValueByName ("CenterFrequency", doubleValue);
+    double centerFrequency = doubleValue.Get();
     // Distance between the mmWave BSs and the two co-located LTE and mmWave BSs in meters
-    double isd = 1000; // (interside distance)
+    GlobalValue::GetValueByName ("IntersideDistance", doubleValue);
+    double isd = doubleValue.Get(); // (interside distance)
     // Number of antennas in each UE
-    int numAntennasMcUe = 1;
+    GlobalValue::GetValueByName ("N_AntennasMcUe", uintegerValue);
+    int numAntennasMcUe = uintegerValue.Get();
     // Number of antennas in each mmWave BS
-    int numAntennasMmWave = 1;
+    GlobalValue::GetValueByName ("N_AntennasMmWave", uintegerValue);
+    int numAntennasMmWave = uintegerValue.Get();
 
     NS_LOG_INFO("Bandwidth " << bandwidth << " centerFrequency " << double(centerFrequency)
                              << " isd " << isd << " numAntennasMcUe " << numAntennasMcUe
@@ -537,9 +575,12 @@ main(int argc, char *argv[]) {
     Ptr <MmWavePointToPointEpcHelper> epcHelper = CreateObject<MmWavePointToPointEpcHelper>();
     mmwaveHelper->SetEpcHelper(epcHelper);
 
-    uint8_t nMmWaveEnbNodes = 2;
-    uint8_t nLteEnbNodes = 1;
-    uint32_t ues = 1;
+    GlobalValue::GetValueByName ("N_MmWaveEnbNodes", uintegerValue);
+    uint8_t nMmWaveEnbNodes = uintegerValue.Get();
+    GlobalValue::GetValueByName ("N_LteEnbNodes", uintegerValue);
+    uint8_t nLteEnbNodes = uintegerValue.Get();
+    GlobalValue::GetValueByName ("N_Ues", uintegerValue);
+    uint32_t ues = uintegerValue.Get();
     uint8_t nUeNodes = ues * nMmWaveEnbNodes;
     //uint8_t nUeNodes = 1;
     NS_LOG_INFO(" Bandwidth " << bandwidth << " centerFrequency " << double(centerFrequency)
@@ -624,7 +665,7 @@ main(int argc, char *argv[]) {
     uemobility.SetPositionAllocator(uePositionAlloc);
     uemobility.Install(ueNodes);
 
-    // Install mmWave, lte, mc Devices to the nodes
+    // Install mmWave, lte, mc Devices to the nodesnumAntennasMmWave
     NetDeviceContainer lteEnbDevs = mmwaveHelper->InstallLteEnbDevice(lteEnbNodes);
     NetDeviceContainer mmWaveEnbDevs = mmwaveHelper->InstallEnbDevice(mmWaveEnbNodes);
     NetDeviceContainer mcUeDevs = mmwaveHelper->InstallMcUeDevice(ueNodes);
