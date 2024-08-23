@@ -369,14 +369,14 @@ static ns3::GlobalValue center_freq ("CenterFrequency", "Center Frequency Value"
 static ns3::GlobalValue bandwidth_value ("Bandwidth", "Bandwidth Value",
                                       ns3::DoubleValue (20e6),
                                       ns3::MakeDoubleChecker<double> ());
+// TODO: check for later
+// static ns3::GlobalValue num_antennas_McUe ("N_AntennasMcUe", "Number of Antenna as McUe",
+//                                       ns3::IntegerValue (1),
+//                                       ns3::MakeIntegerChecker<int> ());
 
-static ns3::GlobalValue num_antennas_McUe ("N_AntennasMcUe", "Number of Antenna as McUe",
-                                      ns3::IntegerValue (1),
-                                      ns3::MakeIntegerChecker<int> ());
-
-static ns3::GlobalValue num_antennas_MmWave ("N_AntennasMmWave", "Number of Antenna as MmWave",
-                                      ns3::IntegerValue (1),
-                                      ns3::MakeIntegerChecker<int> ());
+// static ns3::GlobalValue num_antennas_MmWave ("N_AntennasMmWave", "Number of Antenna as MmWave",
+//                                       ns3::IntegerValue (1),
+//                                       ns3::MakeIntegerChecker<int> ());
 
 static ns3::GlobalValue interside_distance_value ("IntersideDistance", "Interside Distance Value",
                                       ns3::DoubleValue (1000),
@@ -552,11 +552,11 @@ main(int argc, char *argv[]) {
     GlobalValue::GetValueByName ("IntersideDistance", doubleValue);
     double isd = doubleValue.Get(); // (interside distance)
     // Number of antennas in each UE
-    GlobalValue::GetValueByName ("N_AntennasMcUe", uintegerValue);
-    int numAntennasMcUe = uintegerValue.Get();
+    // GlobalValue::GetValueByName ("N_AntennasMcUe", uintegerValue);
+    int numAntennasMcUe = 1; //uintegerValue.Get();
     // Number of antennas in each mmWave BS
-    GlobalValue::GetValueByName ("N_AntennasMmWave", uintegerValue);
-    int numAntennasMmWave = uintegerValue.Get();
+    // GlobalValue::GetValueByName ("N_AntennasMmWave", uintegerValue);
+    int numAntennasMmWave = 1; //uintegerValue.Get();
 
     NS_LOG_INFO("Bandwidth " << bandwidth << " centerFrequency " << double(centerFrequency)
                              << " isd " << isd << " numAntennasMcUe " << numAntennasMcUe
