@@ -307,7 +307,7 @@ static ns3::GlobalValue
                                 ns3::DoubleValue(0.1), ns3::MakeDoubleChecker<double>(0.01, 2.0));
 
 static ns3::GlobalValue g_simTime("simTime", "Simulation time in seconds", ns3::DoubleValue(1000),
-                                  ns3::MakeDoubleChecker<double>(0.1, 1000.0));
+                                  ns3::MakeDoubleChecker<double>(0.1, 100000.0));
 
 static ns3::GlobalValue g_outageThreshold("outageThreshold",
                                           "SNR threshold for outage events [dB]", // use -1000.0 with NoAuto
@@ -351,7 +351,7 @@ static ns3::GlobalValue g_controlFileName("controlFileName",
 
 // TODO: running flags
 static ns3::GlobalValue mmWave_nodes ("N_MmWaveEnbNodes", "Number of mmWaveNodes",
-                                      ns3::UintegerValue (2),
+                                      ns3::UintegerValue (4),
                                       ns3::MakeUintegerChecker<uint8_t> ());
 // TODO: next step(make it in correct way, regarding to position)
 // static ns3::GlobalValue lteEnb_nodes ("N_LteEnbNodes", "Number of LteEnbNodes",
@@ -359,7 +359,7 @@ static ns3::GlobalValue mmWave_nodes ("N_MmWaveEnbNodes", "Number of mmWaveNodes
 //                                       ns3::MakeUintegerChecker<uint8_t> ());
 
 static ns3::GlobalValue ue_s ("N_Ues", "Number of User Equipments",
-                                      ns3::UintegerValue (1),
+                                      ns3::UintegerValue (3),
                                       ns3::MakeUintegerChecker<uint32_t> ());
 
 static ns3::GlobalValue center_freq ("CenterFrequency", "Center Frequency Value",
@@ -581,8 +581,9 @@ main(int argc, char *argv[]) {
     uint8_t nLteEnbNodes = 1; //uintegerValue.Get();
     GlobalValue::GetValueByName ("N_Ues", uintegerValue);
     uint32_t ues = uintegerValue.Get();
-    uint8_t nUeNodes = ues * nMmWaveEnbNodes;
-    //uint8_t nUeNodes = 1;
+    // TODO: discuss number of UEs implementation
+    //uint8_t nUeNodes = ues * nMmWaveEnbNodes;
+    uint8_t nUeNodes = ues;
     NS_LOG_INFO(" Bandwidth " << bandwidth << " centerFrequency " << double(centerFrequency)
                               << " isd " << isd << " numAntennasMcUe " << numAntennasMcUe
                               << " numAntennasMmWave " << numAntennasMmWave << " nMmWaveEnbNodes "
@@ -632,7 +633,6 @@ main(int argc, char *argv[]) {
     // We want a center with one LTE enb and one mmWave co-located in the same place
     enbPositionAlloc->Add(centerPosition);
     enbPositionAlloc->Add(centerPosition);
-
     double x, y;
     double nConstellation = nMmWaveEnbNodes - 1;
 
