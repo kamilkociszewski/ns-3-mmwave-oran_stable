@@ -353,10 +353,10 @@ static ns3::GlobalValue g_controlFileName("controlFileName",
 static ns3::GlobalValue mmWave_nodes ("N_MmWaveEnbNodes", "Number of mmWaveNodes",
                                       ns3::UintegerValue (2),
                                       ns3::MakeUintegerChecker<uint8_t> ());
-
-static ns3::GlobalValue lteEnb_nodes ("N_LteEnbNodes", "Number of LteEnbNodes",
-                                      ns3::UintegerValue (1),
-                                      ns3::MakeUintegerChecker<uint8_t> ());
+// TODO: next step(make it in correct way, regarding to position)
+// static ns3::GlobalValue lteEnb_nodes ("N_LteEnbNodes", "Number of LteEnbNodes",
+//                                       ns3::UintegerValue (1),
+//                                       ns3::MakeUintegerChecker<uint8_t> ());
 
 static ns3::GlobalValue ue_s ("N_Ues", "Number of User Equipments",
                                       ns3::UintegerValue (1),
@@ -577,8 +577,8 @@ main(int argc, char *argv[]) {
 
     GlobalValue::GetValueByName ("N_MmWaveEnbNodes", uintegerValue);
     uint8_t nMmWaveEnbNodes = uintegerValue.Get();
-    GlobalValue::GetValueByName ("N_LteEnbNodes", uintegerValue);
-    uint8_t nLteEnbNodes = uintegerValue.Get();
+    // GlobalValue::GetValueByName ("N_LteEnbNodes", uintegerValue);
+    uint8_t nLteEnbNodes = 1; //uintegerValue.Get();
     GlobalValue::GetValueByName ("N_Ues", uintegerValue);
     uint32_t ues = uintegerValue.Get();
     uint8_t nUeNodes = ues * nMmWaveEnbNodes;
