@@ -107,8 +107,6 @@ def push_data_to_influx(
     filename = os.path.splitext(os.path.basename(file_path))[0]
     for record in records:
         fields = record.split(',')
-        if filename.startswith('du-cell'):
-            print(0, len(fields))
         if file_path in core_files:
             if id_column is None:
                 print(f"Error: Neither 'imsi', 'id', nor 'ueImsiComplete' found in the headers of {file_path}")
