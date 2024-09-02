@@ -10,55 +10,51 @@ def run_startup_commands():
     ]
 
     for command in commands:
-        # Start the command and wait for it to complete
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
-        stdout, stderr = process.communicate()
-
-        # Check if the command started successfully
-        if process.returncode != 0:
-            print(f"Error: Failed to start '{command}'.\nError Message: {stderr.decode('utf-8')}")
-            return False
-
-    return True
+        print(f"Starting command: {command}")
+        subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
 
 
 # Define the request handler
 class BashRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
-        # Get the content length from the headers
         content_length = int(self.headers['Content-Length'])
-        # Read the body of the request
-        post_data = self.rfile.read(content_length).decode('utf-8')
+        post_data = self.rfile.read(content_length).decode('utf-8').strip()
 
-        # Check if the process "scenario-zero-with_parallel_logging" is already running
+        print(f"Received POST data: {post_data}")
+
         try:
-            result = subprocess.run("pgrep -f scenario-zero-with_parallel_logging", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-            pids = result.stdout.strip().split('\n')
+            # Check if the process 'scenario-zero-w' is already running
+            check_command = "ps -a | grep -F 'scenario-zero-w' | grep -v grep"
+            #print(f"Running command to check process: {check_command}")
+            result = subprocess.run(check_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            grep_output = result.stdout.strip()
 
-            if pids and pids[0]:
-                # If the process is found, return a 500 error response
+            if grep_output:
+                # Process is already running, return a 500 response
+                print(f"Process 'scenario-zero-w' is already running:\n{grep_output}")
                 self.send_response(500)
                 self.send_header('Content-type', 'text/plain')
                 self.end_headers()
-                self.wfile.write(b"Error: Process 'scenario-zero-with_parallel_logging' is already running.")
+                self.wfile.write(f"Error: Process 'scenario-zero-w' is already running:\n{grep_output}".encode('utf-8'))
                 return
 
-            # If the process is not found, start the new process
+            # Start the process in the background
+            print(f"Starting process: {post_data}")
             subprocess.Popen(post_data, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
 
-            # Send a response back immediately without waiting for the process to complete
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
             self.wfile.write(b"Process started.")
         except Exception as e:
-            # Handle any errors
+            print(f"Error: {e}")
             self.send_response(500)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
             self.wfile.write(f"Error starting process: {e}".encode('utf-8'))
 
     def do_GET(self):
+        print("Received GET request.")
         self.send_response(405)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
@@ -66,10 +62,7 @@ class BashRequestHandler(BaseHTTPRequestHandler):
 
 
 def run(server_class=HTTPServer, handler_class=BashRequestHandler, port=38866):
-    # Run startup commands and check if they started correctly
-    if not run_startup_commands():
-        print("Error: One or more startup commands failed to start. Exiting.")
-        return
+    run_startup_commands()
 
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
