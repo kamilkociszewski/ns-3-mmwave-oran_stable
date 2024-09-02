@@ -67,6 +67,8 @@ async def start_simulation(request: Request):
         "IntersideDistance"
     ]
     arguments = '--enableE2FileLogging=1 '
+    ## TO DO
+    ## arguments = '--E2andLogging=1 ' need to be changed in prod version
     for field in fields:
         value = form_data.get(field)
         if value is not None:
