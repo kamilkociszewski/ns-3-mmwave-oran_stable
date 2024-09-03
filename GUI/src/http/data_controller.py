@@ -64,7 +64,8 @@ async def start_simulation(request: Request):
         "Bandwidth",
         "N_AntennasMcUe",
         "N_AntennasMmWave",
-        "IntersideDistance"
+        "IntersideDistanceUEs"
+        "IntersideDistanceCells"
     ]
     #arguments = '--enableE2FileLogging=1 '
     ## TO DO
