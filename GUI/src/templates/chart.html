@@ -464,7 +464,8 @@
                     y: ue.y_position,
                     ue_id: ue.ue_id,
                     type: ue.type,
-                    connected_to: ue.connected_to,
+                    ltecell: 1,
+                    mmwave_cell: ue.connected_to,
                     backgroundColor: cellColorMap.get(ue.connected_to)
                 }));
 
