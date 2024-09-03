@@ -1,6 +1,5 @@
 import subprocess
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import os
 
 # Function to run startup commands
 def run_startup_commands():
@@ -39,8 +38,8 @@ class BashRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(f"Error: Process 'scenario-zero-w' is already running:\n{grep_output}".encode('utf-8'))
                 return
 
-            # Create a log file for the process
-            log_file = post_data.split()[0] + '.log'  # Use the command's name for the log file
+            # Log file for the process
+            log_file = 'ns3_run.log'  # Fixed log file name for the process
             with open(log_file, 'w') as log:
                 print(f"Starting process: {post_data}, logging to: {log_file}")
                 subprocess.Popen(post_data, shell=True, stdout=log, stderr=log, executable='/bin/bash')
