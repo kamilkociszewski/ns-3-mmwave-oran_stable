@@ -22,7 +22,7 @@ class Ue:
     TotNbrDlInitial_Qpsk: Optional[float] = None
     TotNbrDl: Optional[float] = None
     PDCP_PDU_Volume: Optional[float] = None
-    Cell_PDCP_Latency_ms: Optional[float] = None
+    Cell_PDCP_Latency_ms_x_0_1: Optional[float] = None
     Qos_PDCP_PDU: Optional[float] = None
     PDCP_PDU: Optional[float] = None
     PDCP_Throughput_kbps: Optional[float] = None
