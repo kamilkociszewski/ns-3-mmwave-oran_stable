@@ -295,6 +295,7 @@
                 <input type="number" id="IntersideDistanceCells" name="IntersideDistanceCells" value="1000">
             </div>
 
+
             <button type="button" onclick="sendForm('/start_simulation')">Start</button>
             <button type="button" onclick="sendForm('/stop_simulation')">Stop</button>
             <div></div>
@@ -464,8 +465,8 @@
                     y: ue.y_position,
                     ue_id: ue.ue_id,
                     type: ue.type,
-                    ltecell: 1,
-                    mmwave_cell: ue.connected_to,
+                    MMWave_Cell: ue.connected_to,
+                    LTE_Cell: 1,
                     backgroundColor: cellColorMap.get(ue.connected_to)
                 }));
 

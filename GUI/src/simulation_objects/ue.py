@@ -8,7 +8,8 @@ class Ue:
     x_position: float
     y_position: float
     type: str
-    connected_to: int
+    LTE_Cell: int
+    MMWave_Cell: int
     ErrTotalNbrDl: Optional[float] = None
     DRB_BufferSize_Qos: Optional[float] = None
     RRU_PrbUsedDl: Optional[float] = None
