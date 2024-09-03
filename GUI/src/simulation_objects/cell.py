@@ -19,5 +19,5 @@ class Cell:
     TotNbrDlInitial_Qpsk: Optional[int] = None
     TotNbrDl: Optional[int] = None
     dlPrbUsage: Optional[float] = None
-    Cell_Average_Latency: Optional[float] = None
+    Cell_Average_Latency_ms: Optional[float] = None
     LTE_Cell_PDCP_Volume: Optional[float] = None
