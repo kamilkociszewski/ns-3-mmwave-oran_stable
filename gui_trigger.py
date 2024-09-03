@@ -1,6 +1,6 @@
 import subprocess
 from http.server import BaseHTTPRequestHandler, HTTPServer
-
+import os
 
 # Function to run startup commands
 def run_startup_commands():
@@ -11,7 +11,9 @@ def run_startup_commands():
 
     for command in commands:
         print(f"Starting command: {command}")
-        subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
+        log_file = command.split()[1].replace('.py', '.log')  # Create log file based on the script name
+        with open(log_file, 'w') as log:
+            subprocess.Popen(command, shell=True, stdout=log, stderr=log, executable='/bin/bash')
 
 
 # Define the request handler
@@ -25,7 +27,6 @@ class BashRequestHandler(BaseHTTPRequestHandler):
         try:
             # Check if the process 'scenario-zero-w' is already running
             check_command = "ps -a | grep -F 'scenario-zero-w' | grep -v grep"
-            #print(f"Running command to check process: {check_command}")
             result = subprocess.run(check_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
             grep_output = result.stdout.strip()
 
@@ -38,9 +39,11 @@ class BashRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(f"Error: Process 'scenario-zero-w' is already running:\n{grep_output}".encode('utf-8'))
                 return
 
-            # Start the process in the background
-            print(f"Starting process: {post_data}")
-            subprocess.Popen(post_data, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, executable='/bin/bash')
+            # Create a log file for the process
+            log_file = post_data.split()[0] + '.log'  # Use the command's name for the log file
+            with open(log_file, 'w') as log:
+                print(f"Starting process: {post_data}, logging to: {log_file}")
+                subprocess.Popen(post_data, shell=True, stdout=log, stderr=log, executable='/bin/bash')
 
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
