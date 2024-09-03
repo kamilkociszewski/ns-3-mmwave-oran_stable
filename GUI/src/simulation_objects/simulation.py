@@ -63,8 +63,8 @@ class Simulation:
                 TotNbrDl=self.get_last_value_from_measurement(f'ue_{ue_id}_tb.totnbrdl.1.ueid'),
                 PDCP_PDU_Volume=self.get_last_value_from_measurement(
                     f'ue_{ue_id}_qosflow_pdcppduvolumedl_filter_ueid(txpdcppdubytesnrrlc)'),
-                Cell_PDCP_Latency_ms=0.1*(self.get_last_value_from_measurement(
-                    f'ue_{ue_id}_drb.pdcpsdudelaydl.ueid(pdcp latency)')),
+                Cell_PDCP_Latency_ms=self.get_last_value_from_measurement(
+                    f'ue_{ue_id}_drb.pdcpsdudelaydl.ueid(pdcp latency)'),
                 Qos_PDCP_PDU=self.get_last_value_from_measurement(
                     f'ue_{ue_id}_drb_pdcppdunbrdl_qos_ueid(txpdcppdunrrlc)'),
                 PDCP_PDU=self.get_last_value_from_measurement(f'ue_{ue_id}_tot_pdcpsdunbrdl_ueid(txdlpackets)'),
@@ -103,8 +103,8 @@ class Simulation:
                     f'du-cell-{cell_id}_tb.totnbrdlinitial.qpsk.ueid'),
                 TotNbrDl=self.get_last_value_from_measurement(f'du-cell-{cell_id}_tb.totnbrdl.1.ueid'),
                 dlPrbUsage=self.get_last_value_from_measurement(f'du-cell-{cell_id}_dlprbusage'),
-                Cell_Average_Latency_ms=0.1*(self.get_last_value_from_measurement(
-                    f'cu-up-cell-{cell_id}_drb.pdcpsdudelaydl (cellaveragelatency)')),
+                Cell_Average_Latency_ms=self.get_last_value_from_measurement(
+                    f'cu-up-cell-{cell_id}_drb.pdcpsdudelaydl (cellaveragelatency)'),
                 LTE_Cell_PDCP_Volume=self.get_last_value_from_measurement(
                     f'cu-up-cell-{cell_id}_m_pdcpbytesdl (celldltxvolume)'),
             )
