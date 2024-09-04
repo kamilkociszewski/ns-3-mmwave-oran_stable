@@ -304,7 +304,7 @@
     </div>
     <div id="tab-container">
         <div id="chart-tab" class="tab-button active">Chart View</div>
-        <div id="data-tab" class="tab-button">Source Data</div>
+        <div id="data-tab" class="tab-button">Observe KPIs</div>
     </div>
     <div id="chart-content" class="tab-content active">
         <canvas id="myChart"></canvas>
@@ -534,10 +534,10 @@
 
         if (formContainer.style.display === 'none' || formContainer.style.display === '') {
             formContainer.style.display = 'block';
-            button.textContent = 'Hide Form';
+            button.textContent = 'Hide simulation setup';
         } else {
             formContainer.style.display = 'none';
-            button.textContent = 'Show Form';
+            button.textContent = 'Show simulation setup';
         }
     });
 
