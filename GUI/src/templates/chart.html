@@ -657,7 +657,7 @@
             })
             .then(data => {
                 console.log('Success:', data);
-statusLabel.textContent = 'Simulation running \n(if there are no Cells/UEs on the grid after 15s, please check if ns3 is running properly typing ps -a in terminal or cat ns-3-mmwave-oran/ns3_run.log)';
+statusLabel.textContent = 'Simulation running (if there are no Cells/UEs on the grid after max 30s, please check if ns3 is running properly typing in terminal "ps -a" or "cat ns-3-mmwave-oran/ns3_run.log")';
             })
             .catch((error) => {
                 console.error('Error:', error);
