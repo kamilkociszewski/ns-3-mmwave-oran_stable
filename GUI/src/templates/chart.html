@@ -265,7 +265,7 @@
             <div>
                 <div style="display: flex; flex-direction: column;">
                     <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <label for="flexric">Connect to FlexRIC: (The FlexRIC need to be running or ns3 will crash) </label>
+                        <label for="flexric">Connect to FlexRIC: (If true, the FlexRIC need to be running or ns3 will crash) </label>
                         <input type="checkbox" id="flexric" name="flexric" value="true"
                                style="transform: scale(1.5); margin-left: 0;">
                     </div>
@@ -657,7 +657,7 @@
             })
             .then(data => {
                 console.log('Success:', data);
-statusLabel.textContent = 'Simulation running';
+statusLabel.textContent = 'Simulation running (if there are no Cells/UEs on the grid after 15s, please check if ns3 is running properly)';
             })
             .catch((error) => {
                 console.error('Error:', error);
