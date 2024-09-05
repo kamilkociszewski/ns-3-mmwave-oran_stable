@@ -69,7 +69,7 @@ async def start_simulation(request: Request):
     ]
     if form_data.get('flexric') == 'true':
         arguments = '--E2andLogging=1 '
-        print ("We are here 1")
+        print("We are here 1")
     else:
         arguments = '--enableE2FileLogging=1 '
         print("We are here 2")
