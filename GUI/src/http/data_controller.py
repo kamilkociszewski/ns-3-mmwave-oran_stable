@@ -67,7 +67,7 @@ async def start_simulation(request: Request):
         "IntersideDistanceUEs",
         "IntersideDistanceCells"
     ]
-    if form_data.get('') == 'true':
+    if form_data.get('flexric') == 'true':
         arguments = '--E2andLogging=1 '
     else:
         arguments = '--enableE2FileLogging=1 '
