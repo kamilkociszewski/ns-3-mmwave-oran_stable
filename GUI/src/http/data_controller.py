@@ -70,7 +70,7 @@ async def start_simulation(request: Request):
     if form_data.get('') == 'true':
         arguments = '--E2andLogging=1 '
     else:
-        arguments = '--enableE2FileLogging=1'
+        arguments = '--enableE2FileLogging=1 '
     for field in fields:
         value = form_data.get(field)
         if value is not None:
